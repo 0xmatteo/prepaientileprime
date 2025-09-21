@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prépa Contrôles – Multi-projets avec notes (login + synchro)</title>
+<style>
+  :root{--bg:#0f1220;--card:#171a2b;--muted:#9aa0b4;--text:#f3f5ff;--accent:#6ea8fe;--accent-strong:#2f7dff;--good:#4ade80;--warn:#f59e0b;--bad:#ef4444;--radius:14px}
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;font:16px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:radial-gradient(1200px 800px at 20% -10%,#1b2140 0%,#0f1220 45%,#0b0e1a 100%);color:var(--text)}
+  .container{max-width:1100px;margin:0 auto;padding:24px}
+  h1{margin:0 0 8px;font-size:26px}.muted{color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,#1b1f33 0%,#15192a 100%);border:1px solid #22263d;border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  label{display:block;margin:8px 0 6px}
+  input,select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid #2a2f4a;background:#0f1330;color:var(--text);outline:none}
+  input::placeholder{color:#7680a5} input:focus{border-color:#3e64ff}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{appearance:none;border:1px solid #2a2f4a;background:#0f1330;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer;transition:transform .06s,background .15s,border .15s}
+  .btn:hover{border-color:#3e64ff} .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,#2f7dff,#2063ff);border-color:#2b63f5}
+  .btn.good{background:linear-gradient(180deg,#2a8a5a,#1d7047);border-color:#1f8a56}
+  .btn.warn{background:linear-gradient(180deg,#a86c13,#8b5408);border-color:#b67a1f}
+  .btn.small{padding:7px 10px;font-size:14px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+  .stat{padding:12px;border:1px solid #2a2f4a;background:#0f1330;border-radius:12px;text-align:center}
+  .stat .v{font-size:20px;font-variant-numeric:tabular-nums}.stat .l{font-size:12px;color:var(--muted)}
+  .list{display:grid;gap:14px}
+  .proj{padding:14px;border:1px solid #2a2f4a;background:#0f1330;border-radius:14px}
+  .proj-head{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap}
+  .title{font-weight:600}.tags{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{padding:4px 8px;border-radius:999px;border:1px solid #2a2f4a;background:#0f1330;color:#e6eaff;font-size:12px}
+  .progress{background:#0b0f26;border:1px solid #2a2f4a;border-radius:14px;height:18px;position:relative;overflow:hidden}
+  .bar{position:absolute;inset:0 auto 0 0;width:0%;background:linear-gradient(90deg,#2f7dff,#6ea8fe);box-shadow:0 0 20px rgba(110,168,254,.35) inset;transition:width .35s ease}
+  .meta{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;margin-top:6px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chip{padding:7px 10px;border-radius:999px;border:1px solid #2a2f4a;background:#0f1330;cursor:pointer}
+  .chip:hover{border-color:#3e64ff}
+  .est{font-weight:600}.est.good{color:var(--good)}.est.mid{color:var(--warn)}.est.bad{color:var(--bad)}
+  .daily-req{font-weight:600}.daily-req.good{color:var(--good)}.daily-req.mid{color:var(--warn)}.daily-req.bad{color:var(--bad)}
+  #test-badge{position:fixed;right:10px;bottom:10px;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid #2a2f4a;background:#0f1330}
+  #test-badge.ok{color:#16a34a} #test-badge.ko{color:#ef4444}
+  /* --- Top bar / Auth --- */
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(15,18,32,.7);backdrop-filter:blur(8px);border-bottom:1px solid #22263d}
+  .topwrap{max-width:1100px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .logo{width:26px;height:26px;border-radius:6px;background:linear-gradient(180deg,#2f7dff,#6ea8fe)}
+  .user{display:flex;align-items:center;gap:10px}
+  .avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #2a2f4a}
+  .pill{padding:6px 10px;border:1px solid #2a2f4a;border-radius:999px;background:#0f1330}
+</style>
+</head>
+<body>
+  <!-- Topbar with auth -->
+  <div class="topbar">
+    <div class="topwrap">
+      <div class="brand">
+        <div class="logo"></div>
+        <div><strong>Prépa Contrôles</strong> <span class="muted">(synchro multi‑appareils)</span></div>
+      </div>
+      <div class="user">
+        <img id="u-avatar" class="avatar" alt="" style="display:none">
+        <span id="u-name" class="pill muted" style="display:none"></span>
+        <button id="btn-login" class="btn small primary">Se connecter (Google)</button>
+        <button id="btn-logout" class="btn small" style="display:none">Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>Préparer plusieurs contrôles</h1>
+    <p class="muted">Ajoute tes heures (affichées en <strong>h/min</strong>), vois l'<strong>intervalle de note estimé</strong>, puis marque terminé avec ta <strong>note réelle</strong>. Connecte‑toi pour que tes données se synchronisent entre téléphone et ordinateur.</p>
+
+    <!-- Stats globales -->
+    <div class="stats">
+      <div class="stat"><div class="v" id="stat-total">0 h</div><div class="l">Total d'heures travaillées</div></div>
+      <div class="stat"><div class="v" id="stat-sessions">0</div><div class="l">Sessions enregistrées</div></div>
+      <div class="stat"><div class="v" id="stat-projets">0</div><div class="l">Contrôles (en cours / terminés)</div></div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Nouveau contrôle</h2>
+        <label for="t">Titre</label>
+        <input id="t" placeholder="Ex: DS de maths – suites & récurrence">
+        <div class="row" style="gap:10px;margin-top:6px">
+          <div style="flex:1">
+            <label for="g">Objectif (heures)</label>
+            <input id="g" type="number" step="0.25" min="0.25" placeholder="ex: 12">
+          </div>
+          <div style="flex:1">
+            <label for="d">Échéance (facultatif)</label>
+            <input id="d" type="date">
+          </div>
+        </div>
+        <div class="row" style="gap:10px;margin-top:10px">
+          <button class="btn primary" id="addProject">➕ Ajouter le contrôle</button>
+          <button class="btn small" id="exportBtn">⬇️ Export CSV</button>
+          <button class="btn small warn" id="wipeAll">Remise à zéro</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Conseil</h2>
+        <p class="muted">L'estimation (sur 20) est bornée et lissée selon ton avancement, ton rythme (h/j), l'échéance et la régularité. Plus tu enregistres, plus l'intervalle se resserre. Le temps quotidien requis t'aide à planifier ton travail. Avec la connexion, toutes tes données sont synchronisées en temps réel via Firestore (offline compris).</p>
+      </section>
+    </div>
+
+    <h2 style="margin:18px 0 8px">Mes contrôles</h2>
+    <div id="list" class="list"></div>
+
+    <h2 style="margin:18px 0 8px">Contrôles terminés</h2>
+    <div id="finished" class="list"></div>
+  </div>
+
+  <div id="test-badge" title="Clique pour détails"></div>
+
+<script type="module">
+/******************************
+ * 1) Firebase (Auth + Firestore)
+ ******************************/
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ✅ Ta configuration Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyC7w9KQ2HcxsbCZZsdlzP-m35j8_2CoV04",
+  authDomain: "prepa-matteo.firebaseapp.com",
+  projectId: "prepa-matteo",
+  storageBucket: "prepa-matteo.appspot.com",
+  messagingSenderId: "189775262145",
+  appId: "1:189775262145:web:72629269f7e99bbc1aff40",
+  measurementId: "G-8F7GVC8SYX"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Active le cache offline Firestore
+try { await enableIndexedDbPersistence(db); } catch(e){ console.warn('Persistence Firestore non activée:', e?.message||e); }
+
+/******************************
+ * 2) App état & synchro
+ ******************************/
+const $ = s => document.querySelector(s);
+const elList = $('#list'), elFinished = $('#finished');
+const STORAGE = 'prep-multi-v4';
+const isoNow = () => new Date().toISOString();
+const fmtDateTime = iso => new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(iso));
+const state = { projects: [], updatedAt: null };
+let unsubCloud = null;
+let currentUser = null;
+let savingDebounceId = null;
+
+function loadLocal(){
+  try{ const raw = localStorage.getItem(STORAGE); if(raw) Object.assign(state, JSON.parse(raw)); }
+  catch(e){ console.error('Load local error', e); }
+}
+function saveLocal(){
+  try{ localStorage.setItem(STORAGE, JSON.stringify(state)); }
+  catch(e){ console.error('Save local error', e); }
+}
+function debounceSaveCloud(){ clearTimeout(savingDebounceId); savingDebounceId = setTimeout(saveCloud, 400); }
+async function saveCloud(){
+  if(!currentUser) return;
+  try{
+    const ref = doc(db, 'users', currentUser.uid, 'apps', 'prep-multi');
+    const payload = { state, updatedAt: serverTimestamp(), version: 1 };
+    await setDoc(ref, payload, { merge: true });
+  }catch(e){ console.error('Save cloud error', e); }
+}
+async function pullCloudAndMerge(user){
+  const ref = doc(db, 'users', user.uid, 'apps', 'prep-multi');
+  const snap = await getDoc(ref);
+  if(!snap.exists()){
+    state.updatedAt = state.updatedAt || isoNow();
+    await setDoc(ref, { state, updatedAt: serverTimestamp(), version: 1 });
+    return;
+  }
+  const cloud = snap.data()?.state || { projects: [], updatedAt: null };
+  const localDate = new Date(state.updatedAt||0).getTime();
+  const cloudDate = new Date(cloud.updatedAt||0).getTime();
+  if(cloudDate >= localDate){
+    state.projects = Array.isArray(cloud.projects) ? cloud.projects : [];
+    state.updatedAt = cloud.updatedAt || isoNow();
+    saveLocal();
+    render();
+  } else { await saveCloud(); }
+  if(unsubCloud) unsubCloud();
+  unsubCloud = onSnapshot(ref, (docSnap)=>{
+    const d = docSnap.data(); if(!d) return;
+    const incoming = d.state;
+    const incomingDate = new Date(incoming?.updatedAt||0).getTime();
+    const currentDate = new Date(state.updatedAt||0).getTime();
+    if(incomingDate > currentDate){
+      state.projects = Array.isArray(incoming?.projects) ? incoming.projects : [];
+      state.updatedAt = incoming.updatedAt || isoNow();
+      saveLocal(); render();
+    }
+  });
+}
+
+/******************************
+ * 3) Auth UI
+ ******************************/
+const btnLogin = document.getElementById('btn-login');
+const btnLogout = document.getElementById('btn-logout');
+const uName = document.getElementById('u-name');
+const uAvatar = document.getElementById('u-avatar');
+
+btnLogin.onclick = async () => {
+  try{
+    await setPersistence(auth, browserLocalPersistence);
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  }catch(e){ alert('Erreur de connexion: '+(e?.message||e)); }
+};
+btnLogout.onclick = async () => { try{ await signOut(auth); }catch(e){ console.error(e); } };
+
+onAuthStateChanged(auth, async (user)=>{
+  currentUser = user || null;
+  if(user){
+    btnLogin.style.display='none'; btnLogout.style.display='inline-block';
+    uName.style.display='inline-block'; uName.textContent = user.displayName || user.email || 'Compte';
+    if(user.photoURL){ uAvatar.src=user.photoURL; uAvatar.style.display='inline-block'; }
+    await pullCloudAndMerge(user);
+  }else{
+    if(unsubCloud){ unsubCloud(); unsubCloud=null; }
+    btnLogin.style.display='inline-block'; btnLogout.style.display='none';
+    uName.style.display='none'; uAvatar.style.display='none';
+    loadLocal(); render();
+  }
+});
+
+/******************************
+ * 4) Métier & rendu
+ ******************************/
+function sumHours(p){ return (p.entries||[]).reduce((a,e)=> a + Number(e.hours||0), 0); }
+function totalHoursAll(){ return state.projects.reduce((acc,p)=> acc + sumHours(p), 0); }
+function totalSessionsAll(){ return state.projects.reduce((acc,p)=> acc + (p.entries?.length||0), 0); }
+function fmtHM(hours){ const m = Math.round(Number(hours||0)*60); const h = Math.floor(m/60), r = m%60; return `${h}\u00A0h${r?` ${r}\u00A0min`:''}`; }
+
+function earliestISO(p){ if(!p.entries?.length) return null; return [...p.entries].sort((a,b)=> new Date(a.atISO)-new Date(b.atISO))[0].atISO; }
+function paceHPD(p){ const total=sumHours(p); const start=earliestISO(p); if(!start||total<=0) return 0; const days=(Date.now()-new Date(start).getTime())/86400000; return Math.min(total/Math.max(days,0.0001),16); }
+function etaStr(p){ const g=+p.goal||0, done=sumHours(p), left=Math.max(g-done,0), pace=paceHPD(p); if(left===0) return 'Terminé 🎉'; if(pace<=0) return '—'; const dt=new Date(Date.now()+left/pace*86400000); const z=n=>String(n).padStart(2,'0'); return `${dt.getFullYear()}-${z(dt.getMonth()+1)}-${z(dt.getDate())}`; }
+
+function dailyRequired(p){
+  const goal = +p.goal||0, done = sumHours(p), left = Math.max(goal-done,0);
+  if(left === 0) return {hours: 0, text: 'Terminé ✅', class: 'good'};
+  if(!p.deadline) return {hours: 0, text: 'Pas d\'échéance', class: 'good'};
+  const end = new Date(p.deadline+'T23:59:59');
+  const daysLeft = Math.max((end - Date.now())/86400000, 0);
+  if(daysLeft <= 0) return {hours: 0, text: 'Échéance passée ⚠️', class: 'bad'};
+  if(daysLeft < 1) return {hours: left, text: `${fmtHM(left)}/j (urgent!)`, class: 'bad'};
+  const hoursPerDay = left / Math.max(daysLeft, 0.01);
+  let className = 'good'; let text = `${fmtHM(hoursPerDay)}/j`;
+  if(hoursPerDay > 4) className = 'bad'; else if(hoursPerDay > 2) className = 'mid';
+  return {hours: hoursPerDay, text, class: className};
+}
+
+function clamp(a,x,b){ return Math.max(a, Math.min(b,x)); }
+function clamp01(x){ return clamp(0,x,1); }
+function gradeInterval(p){
+  const goal = +p.goal||0, done = sumHours(p), left = Math.max(goal-done,0);
+  if(goal<=0) return {lo:6,hi:12,why:'objectif non défini'};
+  if(left===0) return {lo:18,hi:20,why:'objectif atteint'};
+  const progress = clamp01(done/goal);
+  const pace = paceHPD(p);
+  let readiness;
+  if(p.deadline){
+    const end = new Date(p.deadline+'T23:59:59');
+    const daysLeft = Math.max((end - Date.now())/86400000, 0);
+    if(daysLeft===0) return {lo:4,hi:9,why:'échéance dépassée'};
+    const req = left / Math.max(daysLeft, 0.01);
+    const ratio = pace / Math.max(req, 0.01);
+    const paceScore = 0.5 + 0.5*Math.tanh((ratio-1)*1.2);
+    readiness = clamp01(0.6*progress + 0.4*paceScore);
+  }else{
+    const rel = clamp01((pace*14)/Math.max(left,0.01));
+    readiness = clamp01(0.7*progress + 0.3*rel);
+  }
+  const sessions = p.entries?.length||0;
+  const confidence = clamp01(sessions/6);
+  let center = 20*(0.4 + 0.6*readiness);
+  center = clamp(5, center, 19);
+  const base = 6;
+  const width = Math.max(1.5, base * (1-0.5*confidence) * (1-0.2*readiness));
+  let lo = clamp(0, center - width, 20);
+  let hi = clamp(0, center + width, 20);
+  if(hi < lo){ const m=(hi+lo)/2; lo=m-1; hi=m+1; }
+  return {lo,hi,why: (p.deadline? 'avec échéance' : 'sans échéance')};
+}
+const fmtGrade = x => (Math.round(x*10)/10).toFixed(1).replace(/\.0$/,'');
+
+function touchUpdated(){ state.updatedAt = isoNow(); saveLocal(); debounceSaveCloud(); }
+
+function addProject(title,goal,deadline){ state.projects.push({id:Date.now()+Math.random().toString(16).slice(2), title:title.trim(), goal:+goal, deadline:deadline||'', entries:[], completed:false}); touchUpdated(); render(); }
+function addEntry(p,h){ const v=+h; if(!isFinite(v)||v<=0){ alert('Durée invalide.'); return; } if(!p.entries) p.entries = []; p.entries.push({ id: Date.now() + Math.random().toString(16).slice(2), hours: v, atISO: isoNow() }); touchUpdated(); render(); }
+function completeProject(p){ const s=prompt('Note obtenue (sur 20) :', p.grade!=null?String(p.grade):''); if(s===null) return; const n=+s; if(!isFinite(n)||n<0||n>20) return alert('Entre une note entre 0 et 20.'); p.grade = Math.round(n*10)/10; p.completed = true; p.completedAt = isoNow(); touchUpdated(); render(); }
+function reopenProject(p){ p.completed=false; touchUpdated(); render(); }
+function deleteProject(p){ if(confirm("Supprimer ce contrôle ?\n(Attention : supprime aussi l'historique)")){ state.projects = state.projects.filter(x => x.id !== p.id); touchUpdated(); render(); } }
+function editProject(p){ const nt=prompt('Nouveau titre :', p.title); if(nt===null) return; const ng=prompt('Nouvel objectif (heures) :', String(p.goal)); if(ng===null) return; const nd=prompt('Nouvelle échéance (YYYY-MM-DD, vide si aucune) :', p.deadline||''); if(nd===null) return; if(!nt.trim()) return alert('Titre requis'); const g=+ng; if(!isFinite(g)||g<=0) return alert('Objectif invalide'); if(nd && !/^\d{4}-\d{2}-\d{2}$/.test(nd)) return alert('Date invalide'); p.title=nt.trim(); p.goal=g; p.deadline=nd.trim(); touchUpdated(); render(); }
+
+function render(){
+  elList.innerHTML = ''; elFinished.innerHTML='';
+  $('#stat-total').textContent = fmtHM(totalHoursAll());
+  $('#stat-sessions').textContent = totalSessionsAll();
+  $('#stat-projets').textContent = `${state.projects.filter(p=>!p.completed).length} / ${state.projects.filter(p=>p.completed).length}`;
+  const ongoing = state.projects.filter(p=>!p.completed).slice().sort((a,b)=>(a.deadline||'9999-12-31').localeCompare(b.deadline||'9999-12-31'));
+  const done = state.projects.filter(p=>p.completed).slice().sort((a,b)=> new Date(b.completedAt||0)-new Date(a.completedAt||0));
+  if(!ongoing.length){ const e=document.createElement('div'); e.className='muted'; e.textContent='Aucun contrôle en cours.'; elList.appendChild(e); }
+  ongoing.forEach(p=> elList.appendChild(renderOngoing(p)));
+  if(!done.length){ const e=document.createElement('div'); e.className='muted'; e.textContent='Aucun contrôle terminé.'; elFinished.appendChild(e); }
+  done.forEach(p=> elFinished.appendChild(renderFinished(p)));
+}
+
+function renderOngoing(p){
+  const w = document.createElement('div'); w.className='proj';
+  const done = sumHours(p), pct = p.goal? Math.min(100, Math.round(done/p.goal*100)) : 0, gi = gradeInterval(p);
+  const dailyReq = dailyRequired(p);
+  const head = document.createElement('div'); head.className='proj-head';
+  const L = document.createElement('div'); L.innerHTML = `<div class="title">${escapeHtml(p.title)}</div>`;
+  const R = document.createElement('div'); R.className='row';
+  const bEdit = btn('Éditer','small',() => editProject(p));
+  const bDel = btn('Supprimer','small warn', () => deleteProject(p));
+  R.appendChild(bEdit); R.appendChild(bDel);
+  head.appendChild(L); head.appendChild(R);
+  const tags = document.createElement('div'); tags.className='tags';
+  const estClass = gi.hi>=15? 'good' : gi.hi>=12? 'mid' : 'bad';
+  tags.innerHTML = `<span class="tag">Obj: ${fmtHM(p.goal)}</span>`+
+                   `<span class="tag">${p.deadline||'Sans échéance'}</span>`+
+                   `<span class="tag est"><span class="${estClass}">${fmtGrade(gi.lo)}–${fmtGrade(gi.hi)}/20</span> estimé</span>`+
+                   `<span class="tag daily-req"><span class="${dailyReq.class}">${dailyReq.text}</span></span>`+
+                   `<span class="tag">ETA ${etaStr(p)}</span>`;
+  const prog = document.createElement('div'); prog.className='progress'; prog.innerHTML = `<div class="bar" style="width:${pct}%"></div>`;
+  const meta = document.createElement('div'); meta.className='meta'; meta.innerHTML = `<span>${pct}%</span><span>${fmtHM(done)} / ${fmtHM(p.goal)}</span>`;
+  const actions = document.createElement('div'); actions.className='actions';
+  const inp = document.createElement('input'); inp.type='number'; inp.step='0.25'; inp.min='0.25'; inp.placeholder='Durée (h décimales, ex 1.5 = 1 h 30)'; inp.style.width='240px';
+  const bAdd = btn('Ajouter','',()=>{ addEntry(p, Number(inp.value)); inp.value=''; });
+  const chips = [0.25,0.5,1,2].map(q=> chip('+'+q+'h', ()=>addEntry(p,q)));
+  const bDone = btn('✅ Terminer','',()=>completeProject(p));
+  actions.appendChild(inp); actions.appendChild(bAdd); chips.forEach(c=>actions.appendChild(c)); actions.appendChild(bDone);
+  w.appendChild(head); w.appendChild(tags); w.appendChild(prog); w.appendChild(meta); w.appendChild(actions);
+  return w;
+}
+
+function renderFinished(p){
+  const w = document.createElement('div'); w.className='proj';
+  const head = document.createElement('div'); head.className='proj-head';
+  const L = document.createElement('div'); L.innerHTML = `<div class="title">${escapeHtml(p.title)}</div>`;
+  const R = document.createElement('div'); R.className='row';
+  const bEdit = btn('Modifier note','small', () => completeProject(p));
+  const bReop = btn('↩️ Repasser en cours','small', () => reopenProject(p));
+  const bDel = btn('Supprimer','small warn', () => deleteProject(p));
+  R.appendChild(bEdit); R.appendChild(bReop); R.appendChild(bDel);
+  head.appendChild(L); head.appendChild(R);
+  const tags = document.createElement('div'); tags.className='tags';
+  tags.innerHTML = `<span class="tag">Obj: ${fmtHM(p.goal)}</span>`+
+                   (p.deadline? `<span class="tag">Échéance: ${p.deadline}</span>`:'')+
+                   `<span class="tag">Terminé le ${fmtDateTime(p.completedAt||isoNow())}</span>`+
+                   `<span class="tag"><strong>Note: ${fmtGrade(p.grade??0)}/20</strong></span>`;
+  const meta = document.createElement('div'); meta.className='meta';
+  meta.innerHTML = `<span>Total fait: ${fmtHM(sumHours(p))}</span><span>Sessions: ${p.entries?.length||0}</span>`;
+  w.appendChild(head); w.appendChild(tags); w.appendChild(meta);
+  return w;
+}
+
+function btn(label, extra, on){ const b = document.createElement('button'); b.className = 'btn' + (extra ? (' ' + extra) : ''); b.textContent = label; if(on && typeof on === 'function'){ b.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); on(); }); } return b; }
+function chip(label, on){ const c = document.createElement('button'); c.className = 'chip'; c.textContent = label; if(on) c.addEventListener('click', on); return c; }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+/******************************
+ * 5) Wiring
+ ******************************/
+$('#addProject').addEventListener('click', () => {
+  const t=$('#t').value.trim(), g=Number($('#g').value), d=$('#d').value;
+  if(!t) return alert('Titre requis');
+  if(!isFinite(g)||g<=0) return alert('Objectif invalide');
+  if(d && !/^\d{4}-\d{2}-\d{2}$/.test(d)) return alert('Date invalide (format YYYY-MM-DD requis)');
+  addProject(t,g,d); $('#t').value=''; $('#g').value=''; $('#d').value='';
+});
+$('#wipeAll').addEventListener('click', () => { 
+  if(confirm('Tout effacer ? Cette action est irréversible.')){ 
+    state.projects=[]; touchUpdated(); render(); 
+  } 
+});
+$('#exportBtn').addEventListener('click', () => {
+  try {
+    const rows=[["Titre","Objectif_h","Deadline","Terminé","Note_20","Date_fin","Entrée_id","Heures","Horodatage_ISO"]];
+    state.projects.forEach(p=>{
+      if(!p.entries || p.entries.length===0){ 
+        rows.push([p.title||'',p.goal||0,p.deadline||'',!!p.completed,p.grade??'',p.completedAt||'','',0,'']); 
+      } else {
+        p.entries.forEach(e=> rows.push([p.title||'',p.goal||0,p.deadline||'',!!p.completed,p.grade??'',p.completedAt||'',e.id||'',e.hours||0,e.atISO||'']));
+      }
+    });
+    const csv = rows.map(r=> r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='controles.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+  } catch(e) { console.error('Erreur export CSV:', e); alert('Erreur lors de l\'export CSV'); }
+});
+
+/******************************
+ * 6) Tests rapides
+ ******************************/
+(function runTests(){
+  const tests = [];
+  function t(name, fn){ try{ fn(); tests.push({name, ok:true}); }catch(e){ console.error('Test FAILED:', name, e); tests.push({name, ok:false, err:e}); } }
+  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+  t('Date OK 2025-09-21', ()=>{ if(!dateRe.test('2025-09-21')) throw new Error('regex'); });
+  t('Date KO 2025/09/21', ()=>{ if(dateRe.test('2025/09/21')) throw new Error('should fail "/"'); });
+  const ok = tests.every(x=>x.ok);
+  const badge = document.getElementById('test-badge');
+  badge.textContent = ok ? 'Tests: OK' : 'Tests: KO – voir console';
+  badge.className = ok ? 'ok' : 'ko';
+  badge.onclick = ()=> alert(tests.map(x=> `${x.ok?'✅':'❌'} ${x.name}`).join('\n'));
+})();
+
+// Premier rendu si pas connecté
+loadLocal();
+render();
+</script>
+
+<!--
+FIRESTORE RULES (à coller dans Firebase > Firestore > Rules)
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/apps/prep-multi {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+-->
+</body>
+</html>
